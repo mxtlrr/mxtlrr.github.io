@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Generating 16-bit bootsector code in C</title>
+  </head>
+  <body>
+    <code>Date: 09 Sep 2024</code><br>
+    <code>6-7 min read</code><br>
+    <h1>Generating a C bootsector</h1>
+    <h2>1: Introduction</h2>
+    Usually, legacy BIOS bootsectors are written in assembly, as it gives you more control<br>
+    over your code. But what if we want to do something different? Say, use C? C is primarily<br>
+    used in OSDev as it's as close as you can really get to assembly while having quality-of-life<br>
+    features like variables, functions, structs, etc.<br><br>
+
+    Obviously, this isn't really meant to be a serious project, as it uses a <i>lot</i> of inline assembly.<br>
+    If you want to be serious about doing bootloader dev, either use assembly or switch to UEFI,<br>
+    which drops you into 64-bit mode, and exposes you to more mature APIs than BIOS does,<br>
+    not to mention that BIOS is practically <a href="https://news.ycombinator.com/item?id=40960087">practically deprecated.</a>
+
+    <h2>2: What you'll need</h2>
+    Obviously a C compiler, linker and some <code>objcopy/objdump</code>. I personally used <code>i386-elf-*</code> for<br>
+    everything, but it also may be possible with standalone GCC from any package manager.<br>
+    You can get the distribution of <code>i386-elf-*</code> by either <a href="https://wiki.osdev.org/GCC_Cross-Compiler">building it yourself</a>
+    or getting it from a repo.<br>
+    I chose the former.
+
+    <h2>3: Let's dive in!</h2>
+    <h3>3.1: What do we need to accomplish?</h3>
+    We need to do a few things:
+    <ol>
+      <li>Write some boilerplate <code>jmp $</code> C code.</li>
+      <li>Write a linker script to generate a valid bootsector</li>
+      <li>Objcopy the resulting elf from <b>2</b> to a binary.</li>
+    </ol>
+
+    Surprisingly, this is actually quite simple.
+
+
+    <h3>3.2: The actual meat and potatoes</h3>
+    <h4>3.2.1: <code>main.c</code></h4>
+    For this, all we need is just a <code>for(;;);</code> in some function. I like to call mine <code>bmain()</code> or similar:
+    <pre><code>
+      void _bmain(){
+        for(;;);
+      }
+    </code></pre>
+
+    Not so hard is it? You can compile this with
+    <pre><code>
+      i386-elf-gcc -c -Os -fno-asynchronous-unwind-tables -m16 -march=i686 -ffreestanding -Wall main.c -o main.o
+    </code></pre>
+
+    The only thing you need to pay attention to is that <code>-fno-asynchronous-unwind-tables</code>. Without this, GCC will<br>
+    generate CFI directives. This generates code that <i>we don't want</i>, and <i>reduces the amount of code we can write</i><br>
+    by <b>30-40 bytes</b>. You can read more about CFI directives <a href="https://stackoverflow.com/questions/2529185/what-are-cfi-directives-in-gnu-assembler-gas-used-for">here.</a><br>
+    
+    <h4>3.2.2: The linker script</h4>
+    This is simple. All we need to do is:
+    <ol>
+      <li>Tell the linker script to generate a binary file</li>
+      <li>Point the starting address at <code>0x7c00</code></li>
+      <li>Set the entry to <code>_bmain</code></li>
+      <li>Add a signature 510 bytes in (at <code>0x7dfe</code>), which is the BIOS boot signature.</li>
+    </ol>
+
+    <pre><code>
+    ENTRY(_bmain);
+
+    SECTIONS
+    {
+      . = 0x7c00;
+      .text : AT(0x7C00)
+      {
+        *(.text);
+      }
+
+      .sig : AT(0x7dfe)
+      {
+        SHORT(0xaa55);
+      }
+    }
+    </code></pre>
+
+    Once you've done that, you can link the previously made object file:
+    <pre><code>
+      i386-elf-ld -static -Tlinker.ld -nostdlib --nmagic main.o /tmp/bootsect.elf
+    </code></pre>
+
+    We now have a little 32-bit ELF. Unfortunately, you can't really boot off an ELF,<br>
+    even UEFI use Portable Executable (PE) instead! So, we need to objcopy the bootsector<br>
+    from ELF to flat binary.
+
+    <h4>3.2.3: Generating the flat binary and booting</h4>
+    Generating the flat binary is seriously easy, just
+    <pre><code>
+      i386-elf-objcopy -O binary /tmp/bootsect.elf floppy.img
+    </code></pre>
+
+    Done! We can now check the bootsector and see if it works by <code>hexdump</code>ing it:
+    <pre><code>
+      $ hexdump floppy.img
+
+      0000000 feeb 0000 0000 0000 0000 0000 0000 0000
+      0000010 0000 0000 0000 0000 0000 0000 0000 0000
+      *
+      00001f0 0000 0000 0000 0000 0000 0000 0000 aa55
+      0000200
+
+    </code></pre>
+
+    We can see two things:
+    <ol>
+      <li>The <code>for(;;);</code> line was encoded as <code>EB FE</code>, which corresponds to <code>jmp $</code></li>
+      <li>The boot signature is located at bytes 511 and 512, which means, this bootsector <i>will</i> boot if booted off of!</li>
+    </ol>
+
+    Let's verify this. I'm using qemu with the following flags: <code>qemu-system-i386 -d int -M smm=off -fda floppy.img</code>:<br><br>
+    <img src="./09-09-1.png"><br>
+
+    Look at that! It boots! We can also check the console to make sure we aren't executing any code we shouldn't (we shouldn't anyways).<br>
+    The console is full of
+    <pre><code>
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08
+      Servicing hardware INT=0x08      
+    </code></pre>
+
+    which is good! If we saw something like <code>check_exception: 0xffffff new 0x6</code>, then we're executing random code (bad!)<br>
+
+    <h3>4: What's next?</h3>
+    This is up to you! I wouldn't recommend using it for a serious bootloader though, as you'll be able to write <i>half</i> the code<br>
+    you'll be able to in Assembly. This is mainly because, when you call functions, GCC pushes/pops the stack frame to handle parameters.<br>
+    In hand-written assembly, you don't really have to do this, since most times you'll use registers as parameters.
+
+    <h3>5: Conclusion</h3>
+    Thanks for reading! Not much else to say. I tried explaining as much as I could in as easy to digest as possible. If you have<br>
+    any concerns, reach out to me on either <a href="https://x.com/lm6lm6lm6">Twitter</a> or on Discord at "flowerfan57".
+  </body>
+</html>
