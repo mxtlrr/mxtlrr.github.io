@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Encoding of the JMP instruction</title>
+  </head>
+  <body>
+    <code>Date: 12 Sep 2024</code><br>
+    <code>4-5 min read</code><br>
+    <h1>1: Introduction</h1>
+    <pre><code>
+      $ cat main.asm
+        jmp start
+        nop
+        nop
+        start:
+          hlt
+      $ nasm main.asm -o main
+      $ hexdump main
+        00000000 EB 02 90 90 F4
+    </code></pre>
+
+    We know that the <code>EB</code> encoding corresponds to the <code>JMP [rel8]</code> instruction.<br>
+    But why is it pointing to offset <code>0x02</code>? That corresponds to a <code>nop</code> instruction!?<br>
+    What's going on here?<br><br>
+
+    <i>Note this article only talks about short jump encoding.</i>
+    <h1>2: Encoding</h1>
+    We know that <code>EB XX</code> refers to <code>JMP [rel8]</code>. But shouldn't it, in this case,
+    be encoded as <code>EB 04</code>,<br> since the <code>start</code> label is at offset <code>0x04</code>?
+    Not really. It all has to do with how encoding works<br><br>
+
+    The <code>JMP</code>'s operand is defined as <code>EIP + displacement</code>. So, when the processor reads<br>
+    <code>02</code>, it's at <code>EIP=0x02</code>. It also, somehow (discussed later) knows that the offset to<br>
+    the <code>start</code> label is 2 bytes away. Therefore, the operand is defined as <code>0x02 + 0x02</code>, which
+    is <code>4</code>.<br><br>
+
+    Mystery solved...right? No. How does the assembler know where the start of <code>start</code> is?
+
+    <h1>2: The Assembler's Perspective</h1>
+    <h2>2.1: An educated guess</h2>
+    Firstly, we can notice that there are no bytes generated that state "hey, this is label XXXX at offset YYYY".<br>
+    What the assembler does is:
+    <ol>
+      <li>Looks for any labels (scanning the entire file)</li>
+      <li>Has any array, i.e. <code>labels[256]</code>, and adds each label to the array with it's respective offset</li>
+      <li>Loops thorugh the file again, looking for any <code>JMP</code> instructions, and substituting the label with current offset subtracted by<br>the offset of the label in the array</li>
+    </ol>
+
+    Easy enough. Here's psuedocode that would (probably) do the same:
+    <pre>
+      <code>
+        typedef struct {
+          char* name;
+          int offset;
+        } label_t;
+        label_t labels[256];
+        Loop1, ip = 0
+          if word contains ":" { // Label
+            labels[counter].offset = ip
+            labels[counter].name = word.remove(':')
+            counter++
+          }
+          ip++;
+        EndLoop1
+
+        Loop2, ip2 = 0
+          if word contains "jmp" {
+            NextWord = buffer[ip2+1].
+            if LookUp(NextWord) {// Look up in labels table
+              Dif = ip2 - ip
+              // Encode Dif
+            }
+          }
+        EndLoop2
+      </code>
+    </pre>
+    For example, our start label starts at <code>EIP=0x04</code>, and we jump to it on <code>EIP=0x02</code>, <br>
+    <code>0x04 - 0x02</code> is <code>0x02</code>, which is what's encoded.
+    Obviously, this code isn't perfect, and definently has some flaws -<br>
+    notably that it's <i>terribly</i> inefficient.
+    <h2>2.2: Taking a peek at some source code</h2>
+    <h3>2.2.1: TinyASM</h3>
+    TinyASM defines a label like this:
+    <pre><code>
+      struct label {
+        struct label *left;
+        struct label *right;
+        int value;
+        char name[1];
+      };
+    
+      struct label *label_list;
+    </code></pre>
+
+    Just like we had said earlier. It also has a function to generate the label,<br>
+    <code>define_label</code>:
+    <pre><code>
+      struct label *define_label(name, value);
+    </code></pre>
+
+    On <a href="https://github.com/nanochess/tinyasm/blob/master/tinyasm.c#L1043">line 1045</a>, we can
+    see a condition to check for short jumps:
+    <pre><code>
+      if (decode[1] == '8') {
+        decode += 2;
+        c = instruction_value - (address + 1);
+        if (assembler_step == 2 && (c < -128 || c > 127))
+            message(1, "short jump too long");
+        break;
+      }
+    </code></pre>
+    See? It does do <code>CURR_IP - LABEL_IP</code>. I was right! It seems like this mystery has been<br>
+    fully solved:)<br>
+    <h1>3: Conclusion</h1>
+    This article probably isn't to interesting to most. However, as someone who has<br>
+    tried to write an assembler multiple times (I will try again!), this is extremely helpful<br>
+    when it comes to label parsing<br><br>
+
+    Thanks for reading! If you have any questions, reach out to me on <a href="https://x.com/lm6lm6lm6">Twitter</a>
+    or on Discord as <code>flowerfan57</code>.<br><br>
+  </body>
+</html>
