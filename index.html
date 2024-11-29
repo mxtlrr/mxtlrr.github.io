@@ -6,7 +6,7 @@
 <body>
   <h1>Who Am I?</h1>
   Hi, I'm Nick (lm6/mxtlrr/flowerfan57). I code in C/ASM primarily, as those are the only two<br>
-  languages I really know. I'm also 16. Sometimes I write blog posts, you can check those out<br>
+	languages I really know. I'm also <span id="y"></span>. Sometimes I write blog posts, you can check those out<br>
   below.
 
   <h1>Blog Posts</h1>
@@ -16,5 +16,10 @@
     <li><a href="./2024/09/09-16bit-c.html">09/09: Writing 16-bit bootsectors in C</a></li>
     <li><a href="./2024/09/12-jmp-encoding.html">09/12: The inner workings of the <code>JMP</code> (short) insrtruction</a></li>
   </ul>
+
+	<script>
+		let k=new Date().getTime();let k2=new Date("09/14/2007").getTime();
+		document.getElementById("y").innerHTML=Math.round(((k-k2)/(1000*3600*24))/365);
+	</script>
 </body>
 </html>
