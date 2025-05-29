@@ -1,0 +1,23 @@
+/* Frappe Catpuccin */
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata&display=swap');
+
+body {
+  background-color: #303446;
+  font-family: "Inconsolata", monospace;
+  text-align: center;
+  color: #c6d0f5;
+}
+
+h1, h2 {
+  font-style: italic;
+}
+
+li {
+  list-style-type: lower-alpha;
+  display: block;
+}
+
+a {
+  color: #8caaee;
+  text-decoration: none;
+}
