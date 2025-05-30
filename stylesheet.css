@@ -1,15 +1,42 @@
 /* Frappe Catpuccin */
 @import url('https://fonts.googleapis.com/css2?family=Inconsolata&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
 
 body {
   background-color: #303446;
   font-family: "Inconsolata", monospace;
-  text-align: center;
   color: #c6d0f5;
 }
 
-h1, h2 {
+body:not(pre){
+  text-align: center;
+}
+
+pre {
+  text-align: left;
+  border: 2px solid #232634;
+  background-color: #51576d;
+  padding-left: 20px;
+  padding-right: 10%;
+}
+
+.container {
+  text-align: center;
+}
+
+.container pre {
+  display: inline-block;
+  text-align: left;
+}
+
+h1, h2, h3 {
   font-style: italic;
+}
+
+code {
+  font-family: "Fira Code";
+  font-variant-ligatures: normal;
+  border-radius: 20px;
 }
 
 li {
