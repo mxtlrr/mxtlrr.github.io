@@ -8,6 +8,11 @@ body {
   color: #c6d0f5;
 }
 
+#navbar {
+  text-align: left;
+  padding-left: 20px;
+}
+
 body:not(pre){
   text-align: center;
 }
@@ -39,9 +44,13 @@ code {
   border-radius: 20px;
 }
 
-li {
+ul li {
   list-style-type: lower-alpha;
   display: block;
+}
+
+ol li {
+  list-style-position: inside;
 }
 
 a {
