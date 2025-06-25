@@ -4,31 +4,47 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="stylesheet.css">
-  <title>MXTLRR's Blog</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <title>Mingus' Site</title>
 </head>
 <body>
   <h1>Welcome!</h1>
-  Welcome to my personal website/blog! Here I'll post stuff I'm working on/research stuff.<br>
-  I'm mostly a low level programmer, and have an interest in malware and low level development<br>
-  in general.<br><br>
+  Welcome to my website, my name is <span onclick="alert('wouldn\'t you like to know, weather boy?')">██████</span>. I'm mainly a 
+  C/C++ (sometimes ASM) and Python programmer.<br>
+  Mostly interested in lowlevel/x86 stuff, and malware. I'm <span id="bluh">age</span> years old, still in high school.<br> 
+  If you'd like to talk about anything, just reach out!:)
 
-  I'm <span id="bluh">age</span> years old, and I'm still a highschooler. If you want to talk<br>
-  with me about anything just reach out to me :)
-
-  <h2>Important Links</h2>
+  <h1>Important Links</h1>
   <ul>
     <li><a href="https://github.com/mxtlrr">My GitHub</a></li>
     <li><a href="https://x.com/ingoestheheroin">Twitter</a></li>
   </ul>
 
-  <h2>Existing Blogposts</h2>
-  <ul>
-    <li><a href="./2025/05/29-wipe-mft.html">2025-05-29: Wiping the MFT from NTFS</a></li>
-  </ul><br>
+  <h1>Notable Projects</h1>
+  <div id="projects">
+    <div id="project-1">
+      <h2>DXB</h2>
+      <p><i>A bootable utility to dump BIOS ROM on x86 processors</i></p>
+      <p>Written in C and x86 Assembly</p>
 
-  <marquee direction="down" width="1000" height="250" behavior="alternate" scrolldelay="35" truespeed="35">
-    <marquee behavior="alternate">Amazing site 100% real</marquee>
-  </marquee>
+      <button onclick="location.href='https://github.com/mxtlrr/dxb';"><i class="fa fa-github"></i> View Source</button>
+    </div>
+    <div id="project-2">
+      <h2>SCPCheat</h2>
+      <p><i>Advanced cheat menu for <a href="https://github.com/Regalis11/scpcb/">SCP - Containment Breach</a></i></p>
+      <p>Written in C++</p>
+
+      <button onclick="location.href='https://github.com/mxtlrr/scpcheat';"><i class="fa fa-github"></i> View Source</button>
+    </div>
+    <div id="project-3">
+      <h2>jds</h2>
+      <p><i>Julia Set Renderer written in C, nearly 100% from scratch</i></p>
+      <p>Written in pure C</p>
+
+      <button onclick="location.href='https://github.com/mxtlrr/jds';"><i class="fa fa-github"></i> View Source</button>
+    </div>
+
+  </div>
 
   <script src="garbage.js"></script>
 </body>
