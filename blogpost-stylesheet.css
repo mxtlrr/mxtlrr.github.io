@@ -1,0 +1,77 @@
+/* Frappe Catpuccin */
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+body {
+  background-color: #303446;
+  font-family: "Inconsolata";
+  color: #c6d0f5;
+  text-align: center;
+}
+
+code {
+	font-family: "Fira Code";
+	font-variant-ligatures: common-ligatures;
+}
+
+a {
+  color: #8caaee;
+  text-decoration: none;
+}
+
+h3:not(#navbar h3) {
+	font-size: 28px;
+}
+
+pre {
+  text-align: left;
+  border: 2px solid #232634;
+  background-color: #51576d;
+  padding-left: 20px;
+  padding-right:20px;
+	border-radius: 5px;
+
+	width: 700px;
+	overflow: scroll;
+}
+
+.container {
+  text-align: center;
+}
+
+.container pre {
+  display: inline-block;
+  text-align: left;
+}
+
+/* Navbar -- basically where all the contact information is (and going 'home') */
+#navbar {
+	position: absolute;
+	left: 50px;
+}
+
+#navbar img {
+	border-radius: 50%;
+	width: 20%;
+}
+
+#navbar a {
+	color: #c6d0f5;
+}
+
+#navbar ul li {
+	display: flex;
+	font-size: 19px;
+}
+
+#navbar ul {
+	margin-left: 32%;
+}
+
+#navbar, #blogpost {
+	display: inline-block;
+}
+
+#blogpost {
+	text-align: center;
+}

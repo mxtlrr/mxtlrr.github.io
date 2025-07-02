@@ -1,0 +1,123 @@
+<!--- TODO: fix this garbage on mobile. it looks like shit :sob: -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Using SoundCloud's API without an App</title>
+		<link rel="stylesheet" href="../../blogpost-stylesheet.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	</head>
+	<body>
+		<br><br><br>
+		<div id="navbar">
+			<img src="https://avatars.githubusercontent.com/u/117592709"></img><br>
+			<h3><code>Mingus' Blog</code></h3>
+			<ul>
+				<li><a href="https://mxtlrr.github.io"><i class="fa fa-home" aria-hidden="true"></i>  Go Back</a></li>
+				<li><a href="https://github.com/mxtlrr"><i class="fa fa-github" aria-hidden="true"></i>  Github</a></li>
+			</ul>
+		</div>
+		<div id="blogpost">
+			<h1>Using Soundcloud's API without an App</h1>
+			<h2>July 2, 2025 --- 5 Minute Read</h2>
+			<hr>
+
+			<h3>Introduction</h3>
+			I primarily use Soundcloud for almost every song I listen to. However, there's no<br>
+			rich presence for Discord (like there is for Spotify). Unfortunate, but I can live<br>
+			without it. However, I'd like to make it, just as a test. The problem with this, is<br>
+			just how <b>bad</b> Soundcloud Support is at giving out their API. You used to just<br>
+			fill out a form to do it, but they closed it down a few months ago.<br><br>
+
+			Now, you have to use their terrible "support bot", that claims to create a ticket,<br>
+			but just never does. So how do we get around to actually using their API?<br>
+
+			<h3>DevTools</h3>
+			Now, Soundcloud does expose their API <a href="https://developers.soundcloud.com/docs/api/explorer/open-api">here</a>. The problem is using the API requires<br>
+			both an OAuth2 token and a Client ID. If we can find those, we can use their API.<br>
+			I realized that the browser session must be able to know these, if we're able to do<br>
+			stuff that the API exposes. Sure enough, looking at a request, we can see the following<br>
+			<div class="container">
+				<pre>
+					<code>
+GET https://api-v2.soundcloud.com/me/play-history/tracks?client_id=[client_id]
+  ...
+Authorization: OAuth [token]
+					</code>
+				</pre>
+		</div>
+			Bingo! We now have both things we need. We can just send requests using these two<br>
+			things, right? Not exactly. If you paste this exact request (as cURL) into your<br>
+			terminal, you'll initally get a HTTP 200 OK. Eventually, you'll get HTTP 403,<br>
+			despite the parameters being (for the most part) the same. What's going on here?<br>
+
+			<h3>DataDome: Bot <s>protection</s></h3>
+			In between requests, I noticed only one header changed: <code>X-Datadome-ClientID</code>.<br>
+			This serves as a bot protection solution, seemingly to prevent people like me from doing<br>
+			this. If you take a look at various of the client ID's, you start to notice a pattern:
+			<div class="container">
+				<pre>
+					<code>
+xkVkxGvp5lkBiL0A_cuN6xmUlb_uXDhYQOA4PFrDc3f9sZKL7zvOVDnKDwKz2AipGh6HSCx65CnlJBpyXqjgTmUSkVV3Qi8Xueo8gnJTe_uc3~9F0onjLyw~rYJq63Cv
+t86praf1JKTfbEmyKQ~Cx2~m1TzhwNjfLaahESKCK~mMHgu11VG~9aIu8s8INH_Fxuv~UguZncpZV47hHZ2dff99eXQrHOc0ivf5wfHihj5si4gpejjqIxjEZXhFQEMT
+twFJ_~4ZCOeNfay_yUVMB5ED2RUUGKT~6onBslCMxWaPc2uV97WvV_ywK0_778z_~28zSWlBgkmSsCknLfc3pJeAaRHP0jUh0_A0ZU4ItdoqPeIG_T1p2AUBHihSFiMM
+					</code>
+				</pre>
+			</div>
+
+			I noticed a couple things looking at this:
+			<ol>
+				<li>Each client ID is 128 characters long</li>
+				<li>It uses the alphabet, and numbers seemingly randomly</li>
+				<li>There's anywhere from 6 - 9 seperators (<code>_~</code>, <code>_</code> or <code>~</code>)</li>
+			</ol>
+
+			This makes my job of writing a bypass super easy. All I need to do is generate the new<br>
+			(spoofed) client ID, with those rules. It took genuienly around 5-10 minutes to do.<br>
+
+			<h3>The Bypass</h3>
+			The bypass code literally looks like this:
+			<div class="container">
+				<pre>
+					<code>
+	def regenerate_clientid() -> str:
+		target_length = 128
+		alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+		seperator_count = randint(6,9)
+		every = int(target_length/seperator_count)
+		seperators = ["~", "_", "~_"]
+		i = 0
+		string = ""
+		while i < 129:
+			if i % every == 0 and i != 0:
+				chosen = randint(0, len(seperators)-1)
+				string += seperators[chosen]
+				i += len(seperators[chosen])
+			string += alphabet[randint(0, len(alphabet)-1)]
+			i += 1
+					</code>
+				</pre>
+			</div>
+			It's fairly simple, and works about 60-80% of the time (converges to around 65.7%),<br>
+			which is good enough for this project, as Soundcloud doesn't seem to <a href="https://developers.soundcloud.com/docs/api/rate-limits">have a rate limit!</a><br>
+			Anyways, it's very simple to use, and the way I used it in my rich presence looked like this:
+			<div class="container">
+				<pre>
+					<code>
+	headers['x-datadome-clientid'] = regenerate_clientid()
+	r = requests.get(request_url, headers=headers)
+	while r.status_code != 200:
+		headers['x-datadome-clientid'] = regenerate_clientid()
+		print("Redoing request...", end="")
+		r = requests.get(request_url, headers=headers)
+		print(r.status_code)
+					</code>
+				</pre>
+			</div>
+			
+			That's pretty much all there is to it!
+
+			<h3>Conclusion</h3>
+			Thanks for reading! This was a short blog, slightly rushed but I hope everything was understandable.<br>
+			I'll go back to low level stuff later, but I got slightly sidetracked with this project.
+	</body>
+</html>
