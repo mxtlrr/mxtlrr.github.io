@@ -1,8 +1,7 @@
 window.onload = () => {
-	// age so i don't have to manually update it
-  let bluh =  `${Math.floor(Math.abs((new Date("09/14/2007") - new Date()) / (1000 * 60 * 60 * 24 * 365)))}`;
-  document.getElementById("bluh").innerHTML = bluh;
-
+	if(screen.width <= 850){
+		alert("Hi. This site looks best with a width > 850 px. Sorry!");
+	}
 	// Modify some stuff with a links
 	let links = document.getElementsByTagName("a");
 	for(let i = 0; i < links.length; i++){

@@ -1,59 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="stylesheet.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <title>Mingus' Site</title>
-</head>
-<body>
-  <h1>Welcome!</h1>
-  Welcome to my website, my name is <span onclick="alert('wouldn\'t you like to know, weather boy?')">██████</span>. I'm mainly a 
-  C/C++ (sometimes ASM) and Python programmer.<br>
-  Mostly interested in lowlevel/x86 stuff, and malware. I'm <span id="bluh">age</span> years old, still in high school.<br> 
-  If you'd like to talk about anything, just reach out!:)
-
-  <h1>Important Links</h1>
-  <ul>
-    <li><a href="https://github.com/mxtlrr">My GitHub</a></li>
-    <li><a href="https://x.com/ingoestheheroin">Twitter</a></li>
-  </ul>
-
-  <h1>Notable Projects</h1>
-  <div id="projects">
-    <div id="project-1">
-      <h2>DXB</h2>
-      <p><i>A bootable utility to dump BIOS ROM on x86 processors</i></p>
-      <p>Written in C and x86 Assembly</p>
-
-      <button onclick="location.href='https://github.com/mxtlrr/dxb';"><i class="fa fa-github"></i> View Source</button>
-    </div>
-    <div id="project-2">
-      <h2>SCPCheat</h2>
-      <p><i>Advanced cheat menu for <a href="https://github.com/Regalis11/scpcb/">SCP - Containment Breach</a></i></p>
-      <p>Written in C++</p>
-
-      <button onclick="location.href='https://github.com/mxtlrr/scpcheat';"><i class="fa fa-github"></i> View Source</button>
-    </div>
-    <div id="project-3">
-      <h2>jds</h2>
-      <p><i>Julia Set Renderer written in C, nearly 100% from scratch</i></p>
-      <p>Written in pure C</p>
-
-      <button onclick="location.href='https://github.com/mxtlrr/jds';"><i class="fa fa-github"></i> View Source</button>
-    </div>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="stylesheet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>Mingus' Site</title>
+  </head>
+  <body>
+  <marquee behavior="alternate">Amazing site 100% real</marquee>
+  <div>
+    <pre id="banner">
+ ███▄ ▄███▓ ██▓ ███▄    █   ▄████  █    ██   ██████ 
+▓██▒▀█▀ ██▒▓██▒ ██ ▀█   █  ██▒ ▀█▒ ██  ▓██▒▒██    ▒ 
+▓██    ▓██░▒██▒▓██  ▀█ ██▒▒██░▄▄▄░▓██  ▒██░░ ▓██▄   
+▒██    ▒██ ░██░▓██▒  ▐▌██▒░▓█  ██▓▓▓█  ░██░  ▒   ██▒
+▒██▒   ░██▒░██░▒██░   ▓██░░▒▓███▀▒▒▒█████▓ ▒██████▒▒
+░ ▒░   ░  ░░▓  ░ ▒░   ▒ ▒  ░▒   ▒ ░▒▓▒ ▒ ▒ ▒ ▒▓▒ ▒ ░
+░  ░      ░ ▒ ░░ ░░   ░ ▒░  ░   ░ ░░▒░ ░ ░ ░ ░▒  ░ ░
+░      ░    ▒ ░   ░   ░ ░ ░ ░   ░  ░░░ ░ ░ ░  ░  ░  
+       ░    ░           ░       ░    ░           ░  
+       
+<span id="banner-text">game hacker - software developer - low level programmer</span>
+    </pre>
   </div>
 
-	<h1>Blog Posts</h1>
+  <div id="links-container">  
+    <h1>Links</h1>
+    <ul>
+      <li><a href="https://github.com/mxtlrr"><i class="fa fa-github"></i> Github</a></li>
+      <li><a href="https://x.com/ingoestheheroin"><i class="fa fa-twitter"></i> Twitter</a></li>
+    </ul>
+  </div>
+    
+  <div id="projects-container">
+
+    <h1>Notable Projects</h1>
+    <div id="projects">
+      <div id="project-1">
+        <h2>DXB</h2>
+        <p><i>A bootable utility to dump BIOS ROM on x86 processors</i></p>
+        <p>Written in C and x86 Assembly</p>
+        
+        <button onclick="location.href='https://github.com/mxtlrr/dxb';"><i class="fa fa-github"></i> View Source</button>
+      </div>
+      <div id="project-2">
+        <h2>SCPCheat</h2>
+        <p><i>Advanced cheat menu for <a href="https://github.com/Regalis11/scpcb/">SCP - Containment Breach</a></i></p>
+        <p>Written in C++</p>
+        
+        <button onclick="location.href='https://github.com/mxtlrr/scpcheat';"><i class="fa fa-github"></i> View Source</button>
+      </div>
+      <div id="project-3">
+        <h2>JDS</h2>
+        <p><i>Julia Set Renderer written in C, nearly 100% from scratch</i></p>
+        <p>Written in pure C</p>
+        
+        <button onclick="location.href='https://github.com/mxtlrr/jds';"><i class="fa fa-github"></i> View Source</button>
+      </div>
+    </div>
+  </div>
+  
+  <h1>Blog Posts</h1>
 	<ul>
 		<li><a href="2025/07/02-bypass.html">Using SoundCloud's API without an App</a></li>
 	</ul>
-
-	<marquee direction="down" width="1000" height="250" behavior="alternate" scrolldelay="35" truespeed="35">
-    <marquee behavior="alternate">Amazing site 100% real</marquee>
-  </marquee>
-
+  
   <script src="garbage.js"></script>
 </body>
 </html>
